@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 import os
+from pydub import AudioSegment
 from .forms import AudioFileForm
 from google.cloud import speech
 import matplotlib.pyplot as plt
@@ -16,9 +17,12 @@ def upload(request):
         if form.is_valid():
             file = form.cleaned_data['audio_file']
             file_path = save_audio_file(file)
-            transcription = transcribe_speech(file_path)
-            generate_spectrogram(file_path)
-            return redirect('display', filename=os.path.basename(file_path))
+            # Convert to mono
+            mono_file_path = convert_to_mono(file_path)
+            # Transcribe speech using the mono file
+            transcription = transcribe_speech(mono_file_path)
+            generate_spectrogram(mono_file_path)
+            return redirect('display', filename=os.path.basename(mono_file_path))
     else:
         form = AudioFileForm()
     return render(request, 'upload.html', {'form': form})
@@ -41,6 +45,13 @@ def save_audio_file(file):
             dest.write(chunk)
     return file_path
 
+def convert_to_mono(file_path):
+    sound = AudioSegment.from_file(file_path)
+    sound = sound.set_channels(1)
+    mono_file_path = file_path.replace(".wav", "_mono.wav")
+    sound.export(mono_file_path, format="wav")
+    return mono_file_path
+
 def transcribe_speech(file_path):
     client = speech.SpeechClient()
     with open(file_path, 'rb') as audio_file:
@@ -59,18 +70,29 @@ def transcribe_speech(file_path):
 
     return transcription
 
+import os
+import matplotlib.pyplot as plt
+
 def generate_spectrogram(file_path):
     recognizer = sr.Recognizer()
     with sr.AudioFile(file_path) as source:
         audio = recognizer.record(source)
-    
+
     audio_data = np.frombuffer(audio.get_raw_data(), np.int16)
-    
+
     plt.specgram(audio_data, NFFT=1024, Fs=16000, noverlap=900)
     plt.xlabel('Time')
     plt.ylabel('Frequency')
     plt.title('Spectrogram')
-    
-    spectrogram_path = os.path.join('static', 'spectrograms', f'{os.path.basename(file_path)}.png')
+
+    # Define the directory and ensure it exists
+    spectrogram_dir = os.path.join('static', 'spectrograms')
+    if not os.path.exists(spectrogram_dir):
+        os.makedirs(spectrogram_dir)  # Create the directory
+
+    # Save the spectrogram
+    spectrogram_path = os.path.join(spectrogram_dir, f'{os.path.basename(file_path)}.png')
     plt.savefig(spectrogram_path)
     plt.close()
+    return spectrogram_path
+
