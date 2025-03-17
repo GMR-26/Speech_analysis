@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <title>Audio Recording</title>
+    <!-- Add styles or scripts if necessary -->
+</head>
+<body>
+    <h1>Record Your Audio</h1>
+    <button id="start-btn">Start Recording</button>
+    <button id="stop-btn" disabled>Stop Recording</button>
+    <audio id="audio-playback" controls></audio>
+    <script src="{% static 'js/record.js' %}"></script>
+</body>
+</html>

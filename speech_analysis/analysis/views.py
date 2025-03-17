@@ -7,6 +7,8 @@ from google.cloud import speech
 import matplotlib.pyplot as plt
 import numpy as np
 import speech_recognition as sr
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 def index(request):
     return render(request, 'index.html')
@@ -28,8 +30,25 @@ def upload(request):
     return render(request, 'upload.html', {'form': form})
 
 def record(request):
-    # This is a placeholder for the record functionality
-    return HttpResponse("Recording feature is under development.")
+    return render(request, 'analysis/record.html')
+
+def record_page(request):
+    return render(request, 'analysis/record.html')
+
+def record_audio(request):
+    if request.method == 'POST':
+        audio_file = request.FILES['audio']
+        save_path = os.path.join('uploads', 'recorded_audio.wav')
+
+        # Save the uploaded audio file
+        with open(save_path, 'wb+') as destination:
+            for chunk in audio_file.chunks():
+                destination.write(chunk)
+
+        # Optional: Add additional processing here
+        return JsonResponse({'message': 'Audio file saved successfully!'})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 def display(request, filename):
     spectrogram_url = f'/static/spectrograms/{filename}.png'
@@ -69,9 +88,6 @@ def transcribe_speech(file_path):
         transcription += result.alternatives[0].transcript
 
     return transcription
-
-import os
-import matplotlib.pyplot as plt
 
 def generate_spectrogram(file_path):
     recognizer = sr.Recognizer()
