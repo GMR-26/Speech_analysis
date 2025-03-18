@@ -1,29 +1,37 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import JsonResponse, HttpResponse
 import os
 from pydub import AudioSegment
-from .forms import AudioFileForm
+import uuid  # For unique filenames
 from google.cloud import speech
 import matplotlib.pyplot as plt
 import numpy as np
 import speech_recognition as sr
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from .forms import AudioFileForm
+
+# Ensure the uploads directory exists
+UPLOAD_DIR = 'uploads'
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+    print("Created global 'uploads' directory")
+
 
 def index(request):
     return render(request, 'index.html')
 
+from django.shortcuts import render, redirect
+from .forms import AudioFileForm  # Ensure the form is imported
+
 def upload(request):
     if request.method == 'POST':
-        form = AudioFileForm(request.POST, request.FILES)
+        form = AudioFileForm(request.POST, request.FILES)  # Ensure files are included
         if form.is_valid():
-            file = form.cleaned_data['audio_file']
-            file_path = save_audio_file(file)
-            # Convert to mono
-            mono_file_path = convert_to_mono(file_path)
-            # Transcribe speech using the mono file
-            transcription = transcribe_speech(mono_file_path)
-            generate_spectrogram(mono_file_path)
+            audio_file = form.cleaned_data['audio_file']  # Get the actual file object
+            file_path = save_audio_file(audio_file)  # Pass the file object, not a string
+            mono_file_path = convert_to_mono(file_path)  # Process the saved file
+            transcription = transcribe_speech(mono_file_path)  # Transcribe
+            generate_spectrogram(mono_file_path)  # Generate the spectrogram
             return redirect('display', filename=os.path.basename(mono_file_path))
     else:
         form = AudioFileForm()
@@ -32,36 +40,79 @@ def upload(request):
 def record(request):
     return render(request, 'analysis/record.html')
 
+
 def record_page(request):
     return render(request, 'analysis/record.html')
 
+@csrf_exempt
 def record_audio(request):
     if request.method == 'POST':
-        audio_file = request.FILES['audio']
-        save_path = os.path.join('uploads', 'recorded_audio.wav')
+        try:
+            print("POST request received")
+            print(f"request.FILES: {request.FILES}")
 
-        # Save the uploaded audio file
-        with open(save_path, 'wb+') as destination:
-            for chunk in audio_file.chunks():
-                destination.write(chunk)
+            # Ensure 'uploads/' directory exists
+            if not os.path.exists('uploads'):
+                os.makedirs('uploads')
+                print("Created 'uploads' directory")
 
-        # Optional: Add additional processing here
-        return JsonResponse({'message': 'Audio file saved successfully!'})
+            # Get the audio file
+            audio_file = request.FILES.get('audio')
+            if not audio_file:
+                print("No 'audio' file found in request.FILES")
+                return JsonResponse({'error': 'No audio file provided'}, status=400)
 
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+            # Save the audio file
+            save_path = os.path.join('uploads', 'recorded_audio.wav')
+            print(f"Saving file to: {save_path}")
+            with open(save_path, 'wb+') as destination:
+                for chunk in audio_file.chunks():
+                    destination.write(chunk)
+            print(f"File successfully saved at: {save_path}")
+
+            # Further processing: Convert to mono, generate spectrogram
+            mono_file_path = convert_to_mono(save_path)
+            print(f"Mono file created at: {mono_file_path}")
+            spectrogram_path = generate_spectrogram(mono_file_path)
+            print(f"Spectrogram created at: {spectrogram_path}")
+
+            # Return success response
+            spectrogram_url = f'/static/spectrograms/{os.path.basename(spectrogram_path)}'
+            return JsonResponse({
+                'message': 'Audio file saved and analyzed successfully!',
+                'spectrogram_url': spectrogram_url
+            })
+
+        except Exception as e:
+            print(f"Error processing audio: {e}")
+            return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
+    else:
+        print("Invalid request method")
+        return JsonResponse({'error': 'Invalid request'}, status=400)
 
 def display(request, filename):
     spectrogram_url = f'/static/spectrograms/{filename}.png'
     return render(request, 'display.html', {'spectrogram_url': spectrogram_url})
 
+
 def save_audio_file(file):
     upload_dir = 'uploads'
+
+    # Ensure the uploads directory exists
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-    file_path = os.path.join(upload_dir, file.name)
+        print("Created 'uploads' directory")
+
+    # Generate a unique filename
+    file_name = f"{uuid.uuid4()}_{file.name}"
+    file_path = os.path.join(upload_dir, file_name)
+
+    # Save the file
     with open(file_path, 'wb+') as dest:
-        for chunk in file.chunks():
+        for chunk in file.chunks():  # Correctly handle chunks of the file
             dest.write(chunk)
+
+    print(f"File saved at: {file_path}")
     return file_path
 
 def convert_to_mono(file_path):
@@ -70,6 +121,7 @@ def convert_to_mono(file_path):
     mono_file_path = file_path.replace(".wav", "_mono.wav")
     sound.export(mono_file_path, format="wav")
     return mono_file_path
+
 
 def transcribe_speech(file_path):
     client = speech.SpeechClient()
@@ -88,6 +140,7 @@ def transcribe_speech(file_path):
         transcription += result.alternatives[0].transcript
 
     return transcription
+
 
 def generate_spectrogram(file_path):
     recognizer = sr.Recognizer()
@@ -111,4 +164,3 @@ def generate_spectrogram(file_path):
     plt.savefig(spectrogram_path)
     plt.close()
     return spectrogram_path
-

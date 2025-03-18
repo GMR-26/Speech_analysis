@@ -4,8 +4,7 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('upload/', views.upload, name='upload'),
-    path('record/', views.record, name='record'),
-    path('display/<str:filename>/', views.display, name='display'),
-    path('record/', views.record_audio, name='record_audio'),
-    path('record_page/', views.record_page, name='record_page'),
+    path('record/', views.record_audio, name='record_audio'),  # POST endpoint for recording audio
+    path('record_page/', views.record, name='record'),  # View to render the audio recording page
+    path('display/<str:filename>/', views.display, name='display'),  # Display the spectrogram
 ]

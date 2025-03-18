@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Upload Audio</title>
 </head>
 <body>
-    <h1>Upload Audio</h1>
+    <h1>Upload Audio File</h1>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
