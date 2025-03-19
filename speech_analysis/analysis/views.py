@@ -12,6 +12,41 @@ import speech_recognition as sr
 from django.views.decorators.csrf import csrf_exempt
 from .forms import AudioFileForm
 from pydub import AudioSegment
+import joblib
+import librosa
+from django.conf import settings
+
+# Load the trained model
+try:
+    # Use a raw string or forward slashes for the file path
+    model_path = os.path.join(settings.BASE_DIR, 'analysis', 'speech_disorder_model.pkl')
+    model = joblib.load(model_path)
+except FileNotFoundError:
+    print("Error: Model file 'speech_disorder_model.pkl' not found. Please train the model first.")
+    model = None
+except Exception as e:
+    print(f"Error loading the model: {e}")
+    model = None
+
+def extract_features(file_path):
+    # Load audio file
+    try:
+        audio, sample_rate = librosa.load(file_path, res_type='kaiser_fast')
+    except Exception as e:
+        print(f"Error loading {file_path}: {e}")
+        return None
+    
+    # Adjust n_fft based on the length of the audio signal
+    n_fft = min(512, len(audio))  # Use a smaller n_fft value for short audio files
+    
+    # Extract MFCC features
+    mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40, n_fft=n_fft)
+    mfccs_scaled = np.mean(mfccs.T, axis=0)
+    
+    return mfccs_scaled
+
+# Load the model
+model = joblib.load('analysis/speech_disorder_model.pkl')
 
 # Ensure the uploads directory exists
 UPLOAD_DIR = 'uploads'
@@ -26,16 +61,34 @@ def index(request):
 from django.shortcuts import render, redirect
 from .forms import AudioFileForm  # Ensure the form is imported
 
+def predict_disorder(file_path):
+    # Extract features from the uploaded audio file
+    features = extract_features(file_path)
+    features = np.array(features).reshape(1, -1)  # Reshape for prediction
+    
+    # Predict the label
+    prediction = model.predict(features)
+    return prediction[0]  # Return the predicted label
+
 def upload(request):
     if request.method == 'POST':
-        form = AudioFileForm(request.POST, request.FILES)  # Ensure files are included
+        form = AudioFileForm(request.POST, request.FILES)
         if form.is_valid():
-            audio_file = form.cleaned_data['audio_file']  # Get the actual file object
-            file_path = save_audio_file(audio_file)  # Pass the file object, not a string
-            mono_file_path = convert_to_mono(file_path)  # Process the saved file
-            transcription = transcribe_speech(mono_file_path)  # Transcribe
-            generate_spectrogram(mono_file_path)  # Generate the spectrogram
-            return redirect('display', filename=os.path.basename(mono_file_path))
+            audio_file = form.cleaned_data['audio_file']
+            file_path = save_audio_file(audio_file)
+            
+            # Predict speech disorder
+            prediction = predict_disorder(file_path)
+            
+            # Process the audio (convert to mono, generate spectrogram, etc.)
+            mono_file_path = convert_to_mono(file_path)
+            spectrogram_path = generate_spectrogram(mono_file_path)
+            
+            # Render the result
+            return render(request, 'display.html', {
+                'spectrogram_url': spectrogram_path,
+                'prediction': prediction  # Pass the prediction to the template
+            })
     else:
         form = AudioFileForm()
     return render(request, 'upload.html', {'form': form})
@@ -90,11 +143,9 @@ def record_audio(request):
     else:
         print("Invalid request method")
         return JsonResponse({'error': 'Invalid request'}, status=400)
-
 def display(request, filename):
-    spectrogram_url = f'/static/spectrograms/{filename}.png'
+    spectrogram_url = f'spectrograms/{filename}.png'  # Correct relative path
     return render(request, 'display.html', {'spectrogram_url': spectrogram_url})
-
 
 def save_audio_file(file):
     upload_dir = 'uploads'
@@ -145,24 +196,29 @@ def transcribe_speech(file_path):
 
 
 def generate_spectrogram(file_path):
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(file_path) as source:
-        audio = recognizer.record(source)
+    try:
+        # Load the audio file
+        audio, sample_rate = librosa.load(file_path, sr=None)
+        
+        # Generate the spectrogram
+        plt.specgram(audio, Fs=sample_rate)
+        plt.xlabel('Time')
+        plt.ylabel('Frequency')
+        plt.title('Spectrogram')
 
-    audio_data = np.frombuffer(audio.get_raw_data(), np.int16)
+        # Define the spectrogram directory
+        spectrogram_dir = os.path.join('static', 'spectrograms')
+        if not os.path.exists(spectrogram_dir):
+            os.makedirs(spectrogram_dir)
 
-    plt.specgram(audio_data, NFFT=1024, Fs=16000, noverlap=900)
-    plt.xlabel('Time')
-    plt.ylabel('Frequency')
-    plt.title('Spectrogram')
+        # Save the spectrogram
+        spectrogram_filename = f'{os.path.basename(file_path)}.png'
+        spectrogram_path = os.path.join(spectrogram_dir, spectrogram_filename)
+        plt.savefig(spectrogram_path)
+        plt.close()
 
-    # Define the directory and ensure it exists
-    spectrogram_dir = os.path.join('static', 'spectrograms')
-    if not os.path.exists(spectrogram_dir):
-        os.makedirs(spectrogram_dir)  # Create the directory
-
-    # Save the spectrogram
-    spectrogram_path = os.path.join(spectrogram_dir, f'{os.path.basename(file_path)}.png')
-    plt.savefig(spectrogram_path)
-    plt.close()
-    return spectrogram_path
+        print(f"Spectrogram saved at: {spectrogram_path}")
+        return os.path.join('spectrograms', spectrogram_filename)
+    except Exception as e:
+        print(f"Error generating spectrogram: {e}")
+        return None

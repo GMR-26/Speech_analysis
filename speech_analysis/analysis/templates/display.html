@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +8,8 @@
 </head>
 <body>
     <h1>Speech Spectrogram</h1>
-    <img src="{{ spectrogram_url }}" alt="Spectrogram">
-    <a href="/">Go back to Home</a>
+    <img src="{% static spectrogram_url %}" alt="Spectrogram">
+<p>Predicted Speech Disorder: <strong>{{ prediction }}</strong></p>
+<a href="/">Go back to Home</a>
 </body>
 </html>
