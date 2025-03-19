@@ -47,6 +47,7 @@ def record(request):
 def record_page(request):
     return render(request, 'analysis/record.html')
 
+
 @csrf_exempt
 def record_audio(request):
     if request.method == 'POST':
@@ -79,12 +80,9 @@ def record_audio(request):
             spectrogram_path = generate_spectrogram(mono_file_path)
             print(f"Spectrogram created at: {spectrogram_path}")
 
-            # Return success response
-            spectrogram_url = f'/static/spectrograms/{os.path.basename(spectrogram_path)}'
-            return JsonResponse({
-                'message': 'Audio file saved and analyzed successfully!',
-                'spectrogram_url': spectrogram_url
-            })
+            # Redirect to the display page
+            filename = os.path.basename(mono_file_path)
+            return redirect('display', filename=filename)
 
         except Exception as e:
             print(f"Error processing audio: {e}")

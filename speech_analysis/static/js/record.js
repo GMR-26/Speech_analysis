@@ -80,20 +80,29 @@ document.getElementById('start-btn').addEventListener('click', async () => {
                 },
                 body: formData,
             })
-                .then((response) => response.json())
-                .then((data) => {
-                    console.log("Response from server:", data);
-
-                    // If the response includes the spectrogram URL, display it
-                    if (data.spectrogram_url) {
-                        const spectrogramImg = document.createElement('img');
-                        spectrogramImg.src = data.spectrogram_url;
-                        spectrogramImg.alt = "Spectrogram";
-                        spectrogramImg.style.marginTop = "20px"; // Add some spacing
-                        document.body.appendChild(spectrogramImg);
+                .then((response) => {
+                    if (response.redirected) {
+                        // Redirect to the display page
+                        window.location.href = response.url;
                     } else {
-                        console.error("No spectrogram URL found in the response.");
-                        alert("Spectrogram not found. Please check the backend process.");
+                        return response.json();
+                    }
+                })
+                .then((data) => {
+                    if (data) {
+                        console.log("Response from server:", data);
+
+                        // If the response includes the spectrogram URL, display it
+                        if (data.spectrogram_url) {
+                            const spectrogramImg = document.createElement('img');
+                            spectrogramImg.src = data.spectrogram_url;
+                            spectrogramImg.alt = "Spectrogram";
+                            spectrogramImg.style.marginTop = "20px"; // Add some spacing
+                            document.body.appendChild(spectrogramImg);
+                        } else {
+                            console.error("No spectrogram URL found in the response.");
+                            alert("Spectrogram not found. Please check the backend process.");
+                        }
                     }
                 })
                 .catch(async (error) => {
