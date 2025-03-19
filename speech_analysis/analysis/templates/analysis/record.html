@@ -1,16 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Audio Recording</title>
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <!-- Add styles or scripts if necessary -->
+    
+    <!-- Basic styling for better UI -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        #audio-playback {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+    </style>
 </head>
 <body>
     <h1>Record Your Audio</h1>
-    <button id="start-btn">Start Recording</button>
-    <button id="stop-btn" disabled>Stop Recording</button>
+    <div>
+        <button id="start-btn">Start Recording</button>
+        <button id="stop-btn" disabled>Stop Recording</button>
+    </div>
     <audio id="audio-playback" controls></audio>
+
+    <!-- Link to your JavaScript file -->
     <script src="{% static 'js/record.js' %}"></script>
+
+    <!-- Optional: Inline script for additional functionality -->
+    <script>
+        // Example of adding event listeners for better user feedback
+        document.getElementById('start-btn').addEventListener('click', function() {
+            this.disabled = true;
+            document.getElementById('stop-btn').disabled = false;
+            // Add any additional start recording logic here
+        });
+
+        document.getElementById('stop-btn').addEventListener('click', function() {
+            this.disabled = true;
+            document.getElementById('start-btn').disabled = false;
+            // Add any additional stop recording logic here
+        });
+    </script>
 </body>
 </html>

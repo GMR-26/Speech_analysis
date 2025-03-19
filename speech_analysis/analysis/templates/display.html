@@ -2,9 +2,46 @@
 <html>
 <head>
     <title>Speech Spectrogram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        img {
+            display: block;
+            margin: 40px auto;
+            max-width: 80%;
+            border: 5px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        footer {
+            background-color: #4a90e2;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Speech Spectrogram</h1>
+    <header>
+        <h1>Speech Spectrogram</h1>
+    </header>
     <img src="{{ spectrogram_url }}" alt="Spectrogram">
+    <footer>
+        <p>&copy; 2025 Spectrogram Viewer</p>
+    </footer>
 </body>
 </html>

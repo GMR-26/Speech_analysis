@@ -2,10 +2,65 @@
 <html>
 <head>
     <title>Speech Analysis Web App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        nav {
+            text-align: center;
+            margin: 50px 0;
+        }
+        a {
+            display: inline-block;
+            margin: 0 20px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            color: white;
+            background-color: #4a90e2;
+            text-decoration: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        a:hover {
+            background-color: #357abd;
+            transform: scale(1.05);
+        }
+        footer {
+            background-color: #4a90e2;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Speech Analysis Web App</h1>
-    <a href="{% url 'upload' %}">Upload Audio</a>
-    <a href="{% url 'record' %}">Record Audio</a>
+    <header>
+        <h1>Speech Analysis Web App</h1>
+    </header>
+    <nav>
+        <a href="{% url 'upload' %}">Upload Audio</a>
+        <a href="{% url 'record' %}">Record Audio</a>
+    </nav>
+    <footer>
+        <p>&copy; 2025 Speech Analysis Web App</p>
+    </footer>
 </body>
 </html>

@@ -4,11 +4,14 @@ import os
 from pydub import AudioSegment
 import uuid  # For unique filenames
 from google.cloud import speech
+import matplotlib
+matplotlib.use('Agg')  # Non-GUI backend
 import matplotlib.pyplot as plt
 import numpy as np
 import speech_recognition as sr
 from django.views.decorators.csrf import csrf_exempt
 from .forms import AudioFileForm
+from pydub import AudioSegment
 
 # Ensure the uploads directory exists
 UPLOAD_DIR = 'uploads'
@@ -118,7 +121,8 @@ def save_audio_file(file):
 def convert_to_mono(file_path):
     sound = AudioSegment.from_file(file_path)
     sound = sound.set_channels(1)
-    mono_file_path = file_path.replace(".wav", "_mono.wav")
+    sound=sound.set_sample_width(2)
+    mono_file_path = file_path.replace(".wav", "_mono_16bit.wav")
     sound.export(mono_file_path, format="wav")
     return mono_file_path
 
