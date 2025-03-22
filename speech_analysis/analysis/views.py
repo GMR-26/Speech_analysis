@@ -84,11 +84,9 @@ def upload(request):
             mono_file_path = convert_to_mono(file_path)
             spectrogram_path = generate_spectrogram(mono_file_path)
             
-            # Render the result
-            return render(request, 'display.html', {
-                'spectrogram_url': spectrogram_path,
-                'prediction': prediction  # Pass the prediction to the template
-            })
+            # Redirect to the display page with spectrogram and prediction
+            filename = os.path.basename(mono_file_path)
+            return redirect('display', filename=filename)
     else:
         form = AudioFileForm()
     return render(request, 'upload.html', {'form': form})
@@ -99,7 +97,6 @@ def record(request):
 
 def record_page(request):
     return render(request, 'analysis/record.html')
-
 
 @csrf_exempt
 def record_audio(request):
@@ -127,13 +124,17 @@ def record_audio(request):
                     destination.write(chunk)
             print(f"File successfully saved at: {save_path}")
 
-            # Further processing: Convert to mono, generate spectrogram
+            # Convert to mono and generate spectrogram
             mono_file_path = convert_to_mono(save_path)
             print(f"Mono file created at: {mono_file_path}")
             spectrogram_path = generate_spectrogram(mono_file_path)
             print(f"Spectrogram created at: {spectrogram_path}")
 
-            # Redirect to the display page
+            # Predict speech disorder
+            prediction = predict_disorder(mono_file_path)
+            print(f"Prediction: {prediction}")
+
+            # Redirect to the display page with spectrogram and prediction
             filename = os.path.basename(mono_file_path)
             return redirect('display', filename=filename)
 
@@ -143,9 +144,22 @@ def record_audio(request):
     else:
         print("Invalid request method")
         return JsonResponse({'error': 'Invalid request'}, status=400)
+
 def display(request, filename):
-    spectrogram_url = f'spectrograms/{filename}.png'  # Correct relative path
-    return render(request, 'display.html', {'spectrogram_url': spectrogram_url})
+    # Construct the spectrogram URL
+    spectrogram_url = os.path.join('spectrograms', f'{filename}.png')
+    
+    # Construct the path to the mono audio file
+    mono_file_path = os.path.join('uploads', filename)
+    
+    # Predict speech disorder
+    prediction = predict_disorder(mono_file_path)
+    
+    # Render the result
+    return render(request, 'display.html', {
+        'spectrogram_url': spectrogram_url,
+        'prediction': prediction  # Pass the prediction to the template
+    })
 
 def save_audio_file(file):
     upload_dir = 'uploads'

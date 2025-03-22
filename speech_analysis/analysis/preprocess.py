@@ -58,7 +58,7 @@ def create_dataset(csv_path):
     return df_features
 
 # Save the dataset
-csv_path = r"F:\FILES\S6_MiniProj\Speech_analysis\speech_analysis\analysis\data_with_path.csv"  # Use raw string
+csv_path = r"C:\Users\Admin\Documents\GitHub\Speech_analysis\speech_analysis\analysis\data_with_path.csv"  # Use raw string
 df = create_dataset(csv_path)
 df.to_csv("speech_dataset.csv", index=False)
 print("Dataset saved as speech_dataset.csv")
