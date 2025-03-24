@@ -2,63 +2,75 @@ import os
 import librosa
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 def extract_features(file_path):
-    # Check if the file exists
-    if not os.path.exists(file_path):
-        print(f"File not found: {file_path}")
-        return None
-    
-    # Load audio file
+    """Extract MFCC features with error handling"""
     try:
-        audio, sample_rate = librosa.load(file_path, res_type='kaiser_fast')
+        if not Path(file_path).exists():
+            print(f"❌ File not found: {file_path}")
+            return None
+        
+        audio, sample_rate = librosa.load(file_path, sr=None, res_type='kaiser_fast')
+        
+        if len(audio) < 100:
+            print(f"⚠️ Skipped (too short): {file_path}")
+            return None
+            
+        n_fft = min(2048, len(audio))
+        mfccs = librosa.feature.mfcc(
+            y=audio,
+            sr=sample_rate,
+            n_mfcc=40,
+            n_fft=n_fft,
+            hop_length=512
+        )
+        print(f"✅ Processed: {file_path}")
+        return np.mean(mfccs.T, axis=0)
+        
     except Exception as e:
-        print(f"Error loading {file_path}: {e}")
+        print(f"❌ Error processing {file_path}: {str(e)}")
         return None
-    
-    # Skip files that are too short
-    min_length = 100  # Minimum number of samples required (adjust as needed)
-    if len(audio) < min_length:
-        print(f"File too short: {file_path} (length={len(audio)})")
-        return None
-    
-    # Adjust n_fft based on the length of the audio signal
-    n_fft = min(512, len(audio))  # Use a smaller n_fft value for short audio files
-    
-    # Extract MFCC features
-    mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40, n_fft=n_fft)
-    mfccs_scaled = np.mean(mfccs.T, axis=0)
-    
-    return mfccs_scaled
 
 def create_dataset(csv_path):
-    # Load the CSV file
-    df = pd.read_csv(csv_path)
+    """Create dataset with progress tracking"""
+    try:
+        df = pd.read_csv(csv_path)
+        features, labels = [], []
+        total_files = len(df)
+        success_count = 0
+        
+        print(f"\n🔍 Starting processing of {total_files} audio files...\n")
+        
+        for index, row in df.iterrows():
+            file_path = Path(row['Wav_path']).resolve()
+            if not file_path.exists():
+                file_path = Path.cwd() / row['Wav_path']
+                
+            feature = extract_features(str(file_path))
+            if feature is not None:
+                features.append(feature)
+                labels.append(row['Is_dysarthria'])
+                success_count += 1
+            
+            # Progress update every 10 files
+            if (index + 1) % 10 == 0:
+                print(f"\n📊 Progress: {index + 1}/{total_files} files")
+                print(f"✔ Success: {success_count} | ✖ Failed: {index + 1 - success_count}\n")
+                
+        print("\n🎉 Processing complete!")
+        print(f"📋 Results: {success_count}/{total_files} files processed successfully")
+        
+        return pd.DataFrame(features).assign(label=labels)
+        
+    except Exception as e:
+        print(f"\n🔥 Dataset creation failed: {str(e)}")
+        return pd.DataFrame()
+
+if __name__ == "__main__":
+    dataset_path = Path(r"C:\Users\user\OneDrive\Documents\GitHub\Speech_analysis\speech_analysis\analysis\data_with_path.csv")
+    output_path = dataset_path.parent / "speech_dataset.csv"
     
-    features = []
-    labels = []
-
-    # Iterate through each row in the CSV
-    for index, row in df.iterrows():
-        file_path = row['Wav_path']
-        # Fix the file path (replace single backslashes with double backslashes)
-        file_path = file_path.replace("\\", "\\\\")
-        
-        label = row['Is_dysarthria']  # Use 'Is_dysarthria' column as the label
-        
-        # Extract features
-        feature = extract_features(file_path)
-        if feature is not None:
-            features.append(feature)
-            labels.append(label)
-
-    # Create DataFrame
-    df_features = pd.DataFrame(features)
-    df_features['label'] = labels
-    return df_features
-
-# Save the dataset
-csv_path = r"C:\Users\Admin\Documents\GitHub\Speech_analysis\speech_analysis\analysis\data_with_path.csv"  # Use raw string
-df = create_dataset(csv_path)
-df.to_csv("speech_dataset.csv", index=False)
-print("Dataset saved as speech_dataset.csv")
+    df = create_dataset(dataset_path)
+    df.to_csv(output_path, index=False)
+    print(f"\n💾 Dataset saved to: {output_path}")

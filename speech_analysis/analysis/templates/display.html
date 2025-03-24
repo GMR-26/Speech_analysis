@@ -31,9 +31,22 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        p {
-            font-size: 1.2em;
-            margin-top: 20px;
+        .prediction {
+            font-size: 1.5em;
+            margin: 20px 0;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .disorder {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 2px solid #c62828;
+        }
+        .no-disorder {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #2e7d32;
         }
         a {
             display: inline-block;
@@ -59,7 +72,17 @@
 <body>
     <h1>Speech Spectrogram</h1>
     <img src="{% static spectrogram_url %}" alt="Spectrogram">
-    <p>Predicted Speech Disorder: <strong>{{ prediction }}</strong></p>
+    
+    <div class="prediction {% if prediction == 0 %}disorder{% else %}no-disorder{% endif %}">
+        Predicted Disorder: 
+        {% if prediction == 0 %}
+            Dysarthria
+        {% else %}
+            No Disorder
+        {% endif %}
+        
+    </div>
+
     <a href="/">Go back to Home</a>
     <footer>
         © 2025 Your Website | All rights reserved

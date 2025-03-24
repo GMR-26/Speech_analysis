@@ -15,6 +15,7 @@ from pydub import AudioSegment
 import joblib
 import librosa
 from django.conf import settings
+import pandas as pd
 
 # Load the trained model
 try:
@@ -29,22 +30,29 @@ except Exception as e:
     model = None
 
 def extract_features(file_path):
-    # Load audio file
     try:
-        audio, sample_rate = librosa.load(file_path, res_type='kaiser_fast')
+        audio, sr = librosa.load(file_path, sr=None)
+        print(f"\nAudio stats - Length: {len(audio)}, SR: {sr}, Mean: {np.mean(audio):.2f}")
+        
+        n_fft = min(2048, len(audio))
+        mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40, n_fft=n_fft)
+        features = np.mean(mfccs.T, axis=0)
+        
+        print(f"MFCC stats - Mean: {np.mean(features):.2f}, Min: {np.min(features):.2f}, Max: {np.max(features):.2f}")
+        return features
+        
+    
+        # DEBUG: Print feature statistics
+        print(f"\nFeature stats for {file_path}:")
+        print(f"Mean: {np.mean(mfccs):.2f}")
+        print(f"Min: {np.min(mfccs):.2f}")
+        print(f"Max: {np.max(mfccs):.2f}")
+        
+        return np.mean(mfccs.T, axis=0)
+        
     except Exception as e:
-        print(f"Error loading {file_path}: {e}")
+        print(f"Error extracting features: {str(e)}")
         return None
-    
-    # Adjust n_fft based on the length of the audio signal
-    n_fft = min(512, len(audio))  # Use a smaller n_fft value for short audio files
-    
-    # Extract MFCC features
-    mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40, n_fft=n_fft)
-    mfccs_scaled = np.mean(mfccs.T, axis=0)
-    
-    return mfccs_scaled
-
 # Load the model
 model = joblib.load('analysis/speech_disorder_model.pkl')
 
@@ -61,24 +69,36 @@ def index(request):
 
 from django.shortcuts import render, redirect
 from .forms import AudioFileForm  # Ensure the form is imported
-
 def predict_disorder(file_path):
-    # Extract features from the uploaded audio file
+    """Predict speech disorder with proper feature handling"""
     features = extract_features(file_path)
-    if features is None:
-        return "No Disorder"  # Handle feature extraction failure
-    
-    features = np.array(features).reshape(1, -1)  # Reshape for prediction
-    
-    # Predict the label
-    prediction = model.predict(features)
-    print(f"Raw prediction value: {prediction[0]}")  # Log the raw prediction
-    
-    # Map prediction to text
-    if prediction[0] == 1:
-        return "Dysarthria"
-    else:
-        return "No Disorder"
+    if features is not None:
+        # Ensure features is 1D numpy array
+        features = np.array(features).flatten()
+        
+        # Reshape for sklearn (1 sample, n_features)
+        features = features.reshape(1, -1)
+        
+        # Convert to DataFrame with correct feature names
+        if hasattr(model, 'feature_names_in_'):
+            try:
+                features_df = pd.DataFrame(features, columns=model.feature_names_in_)
+                prediction = model.predict(features_df)[0]
+            except:
+                # Fallback to numpy array if DataFrame fails
+                prediction = model.predict(features)[0]
+        else:
+            prediction = model.predict(features)[0]
+        
+        # Get probabilities for debugging
+        proba = model.predict_proba(features)[0]
+        print(f"\nPrediction details:")
+        print(f"Raw features mean: {np.mean(features):.2f}")
+        print(f"Class probabilities: {proba}")
+        print(f"Predicted class: {prediction} (0=Dysarthria, 1=Healthy)")
+        
+        return int(prediction)
+    return 0  # Default to Dysarthria if features extraction fails
 
 def upload(request):
     if request.method == 'POST':
