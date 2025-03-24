@@ -54,26 +54,11 @@
     <div>
         <button id="start-btn">Start Recording</button>
         <button id="stop-btn" disabled>Stop Recording</button>
+        <button id="analyze-btn" disabled>Analyze</button>
     </div>
     <audio id="audio-playback" controls></audio>
 
     <!-- Link to your JavaScript file -->
     <script src="{% static 'js/record.js' %}"></script>
-
-    <!-- Optional: Inline script for additional functionality -->
-    <script>
-        // Example of adding event listeners for better user feedback
-        document.getElementById('start-btn').addEventListener('click', function() {
-            this.disabled = true;
-            document.getElementById('stop-btn').disabled = false;
-            // Add any additional start recording logic here
-        });
-
-        document.getElementById('stop-btn').addEventListener('click', function() {
-            this.disabled = true;
-            document.getElementById('start-btn').disabled = false;
-            // Add any additional stop recording logic here
-        });
-    </script>
 </body>
 </html>

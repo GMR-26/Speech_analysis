@@ -48,6 +48,7 @@ def extract_features(file_path):
 # Load the model
 model = joblib.load('analysis/speech_disorder_model.pkl')
 
+
 # Ensure the uploads directory exists
 UPLOAD_DIR = 'uploads'
 if not os.path.exists(UPLOAD_DIR):
@@ -64,11 +65,20 @@ from .forms import AudioFileForm  # Ensure the form is imported
 def predict_disorder(file_path):
     # Extract features from the uploaded audio file
     features = extract_features(file_path)
+    if features is None:
+        return "No Disorder"  # Handle feature extraction failure
+    
     features = np.array(features).reshape(1, -1)  # Reshape for prediction
     
     # Predict the label
     prediction = model.predict(features)
-    return prediction[0]  # Return the predicted label
+    print(f"Raw prediction value: {prediction[0]}")  # Log the raw prediction
+    
+    # Map prediction to text
+    if prediction[0] == 1:
+        return "Dysarthria"
+    else:
+        return "No Disorder"
 
 def upload(request):
     if request.method == 'POST':
