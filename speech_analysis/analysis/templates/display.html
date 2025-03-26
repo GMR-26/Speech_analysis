@@ -1,7 +1,7 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speech Spectrogram</title>
@@ -31,23 +31,37 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .prediction {
-            font-size: 1.5em;
-            margin: 20px 0;
-            padding: 10px 20px;
-            border-radius: 5px;
-            display: inline-block;
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            width: 70%;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
         }
-        .disorder {
-            background-color: #ffebee;
-            color: #c62828;
-            border: 2px solid #c62828;
+        .dysarthria {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
         }
         .no-disorder {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border: 2px solid #2e7d32;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
         }
+        .description-box {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #d9edf7; /* Light Blue Background */
+        border: 1px solid #bce8f1; /* Blue Border */
+        border-radius: 8px;
+        width: 70%;
+        text-align: left;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        color: #31708f; /* Dark Blue Text */
+        }
+
         a {
             display: inline-block;
             margin-top: 20px;
@@ -72,20 +86,29 @@
 <body>
     <h1>Speech Spectrogram</h1>
     <img src="{% static spectrogram_url %}" alt="Spectrogram">
-    
-    <div class="prediction {% if prediction == 0 %}disorder{% else %}no-disorder{% endif %}">
-        Predicted Disorder: 
-        {% if prediction == 0 %}
-            Dysarthria
-        {% else %}
-            No Disorder
-        {% endif %}
-        
+
+    <!-- Green/Red Box for Disorder Prediction -->
+    {% if prediction == 0 %}
+    <div class="result-box dysarthria">
+        Predicted Speech Disorder: <strong>Dysarthria</strong>
     </div>
+    {% else %}
+    <div class="result-box no-disorder">
+        Predicted Speech Disorder: <strong>No Disorder</strong>
+    </div>
+    {% endif %}
+
+    <!-- Show Dysarthria Description if Predicted -->
+    {% if prediction == 0 and dysarthria_description %}
+    <div class="description-box">
+        <h2>Dysarthria: A Brief Overview</h2>
+        <p>{{ dysarthria_description }}</p>
+    </div>
+    {% endif %}
 
     <a href="/">Go back to Home</a>
     <footer>
-        © 2025 Your Website | All rights reserved
+        © 2025 Speech Analysis Web App | All rights reserved
     </footer>
 </body>
 </html>

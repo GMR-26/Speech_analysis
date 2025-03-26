@@ -185,11 +185,23 @@ def display(request, filename):
     # Predict speech disorder
     prediction = predict_disorder(mono_file_path)
     
-    # Render the result
+    # Description for Dysarthria
+    dysarthria_description = ""
+    if prediction == 0:  # Assuming 0 is Dysarthria and 1 is No Disorder
+        dysarthria_description = (
+            "Dysarthria is a motor speech disorder caused by weakness, paralysis, or lack of coordination "
+            "in the muscles used for speaking. It results from damage to the nervous system, affecting the control "
+            "of the tongue, lips, vocal cords, and diaphragm."
+        )
+    
+    # Render the result with prediction and description
     return render(request, 'display.html', {
         'spectrogram_url': spectrogram_url,
-        'prediction': prediction  # Pass the prediction to the template
+        'prediction': prediction,  # Pass the prediction
+        'dysarthria_description': dysarthria_description,  # Pass description if Dysarthria
     })
+
+
 
 def save_audio_file(file):
     upload_dir = 'uploads'
