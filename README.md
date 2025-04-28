@@ -39,18 +39,17 @@ pip install numpy matplotlib librosa soundfile
 3. **Run the Application**
 
 ```bash
-python speech_analysis.py
+python manage.py runserver
 ```
 
 ## 📂 Folder Structure
 
 ```bash
 speech_analysis/
-├── audio/                    # Folder to store patient audio files
+├── uploads/                  # Folder to store patient audio files
 ├── db/                       # SQLite database file for patient records
-├── images/                   # Generated waveform, pitch, energy plots
-├── patient_speech.py         # Python script for GUI and analysis
-├── speech_analysis.py        # Main application entry point
+├── static/spectograms        # Generated waveform, pitch, energy plots
+├── analysis                  # Python script for GUI and analysis
 └── README.md                 # Project documentation
 ```
 
